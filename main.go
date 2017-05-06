@@ -43,11 +43,11 @@ func main() {
 }
 
 func extractAssignee(c *gin.Context) {
-	supportTeamName := os.Getenv("SUPPORT_TEAM_NAME")
+	teamName := os.Getenv("TEAM_NAME")
 	var jsonNotificationEvent NotificationEvent
 	if c.BindJSON(&jsonNotificationEvent) == nil {
-		if jsonNotificationEvent.Data.Item.Assignee.Name == supportTeamName {
-			log.Print("New ticket for Support team")
+		if jsonNotificationEvent.Data.Item.Assignee.Name == teamName {
+			log.Print("New ticket for the team")
 			notifyDevTeamOnSlack(jsonNotificationEvent.Data.Item.Id)
 		}
 		c.String(http.StatusOK, "thanks!")
@@ -60,7 +60,7 @@ func notifyDevTeamOnSlack(conversationId string) {
 	webhookUrl := os.Getenv("SLACK_WEBHOOK_URL")
 	intercomBaseUrl := os.Getenv("CONVERSATION_BASE_URL")
 	conversationUrl := fmt.Sprintf("%s%s", intercomBaseUrl, conversationId)
-  payload := []byte(fmt.Sprintf(`{"text": "<!here>, A <%s|new conversation> has been assigned to the Support Team. :rungun:"}`, conversationUrl))
+  payload := []byte(fmt.Sprintf(`{"text": "<!here>, A <%s|new conversation> has been assigned to your team. :rungun:"}`, conversationUrl))
   req, err := http.NewRequest("POST", webhookUrl, bytes.NewBuffer(payload))
   req.Header.Set("Content-Type", "application/json")
   client := &http.Client{}
