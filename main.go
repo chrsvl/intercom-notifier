@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"bytes"
 	"github.com/gin-gonic/gin"
+	"fmt"
 )
 
 type NotificationEvent struct {
@@ -17,6 +18,7 @@ type NotificationEventData struct {
 }
 
 type NotificationEventDataItem struct {
+	Id string `json:"id" binding:"required"`
 	Assignee Assignee `json:"assignee" binding:"required"`
 }
 
@@ -46,7 +48,7 @@ func extractAssignee(c *gin.Context) {
 	if c.BindJSON(&jsonNotificationEvent) == nil {
 		if jsonNotificationEvent.Data.Item.Assignee.Name == supportTeamName {
 			log.Print("New ticket for Support team")
-			notifyDevTeamOnSlack()
+			notifyDevTeamOnSlack(jsonNotificationEvent.Data.Item.Id)
 		}
 		c.String(http.StatusOK, "thanks!")
 	} else {
@@ -54,9 +56,11 @@ func extractAssignee(c *gin.Context) {
 	}
 }
 
-func notifyDevTeamOnSlack() {
+func notifyDevTeamOnSlack(conversationId string) {
 	webhookUrl := os.Getenv("SLACK_WEBHOOK_URL")
-  payload := []byte(`{"text": "<!here>, A new conversation has been assigned to the Support Team. :rungun:"}`)
+	intercomBaseUrl := os.Getenv("CONVERSATION_BASE_URL")
+	conversationUrl := fmt.Sprintf("%s%s", intercomBaseUrl, conversationId)
+  payload := []byte(fmt.Sprintf(`{"text": "<!here>, A <%s|new conversation> has been assigned to the Support Team. :rungun:"}`, conversationUrl))
   req, err := http.NewRequest("POST", webhookUrl, bytes.NewBuffer(payload))
   req.Header.Set("Content-Type", "application/json")
   client := &http.Client{}
